@@ -9,6 +9,8 @@ const app = express();
 
 const { PORT, MONGO_BASE_URI, DB_NAME } = process.env;
 
+mongoose.Promise = global.Promise;
+
 mongoose
   .connect(`${MONGO_BASE_URI}/${DB_NAME}`)
   .then(() => console.log("MongoDB 접속 완료"))
@@ -34,6 +36,15 @@ app.get("/health", (req, res, next) => {
     },
   });
   next();
+});
+
+app.use("/persons", require("./routes/persons"));
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send({
+    message: "서버에서 예기치 못한 오류가 발생했습니다.",
+  });
 });
 
 app.use((req, _, next) => {
