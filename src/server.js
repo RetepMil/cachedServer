@@ -40,13 +40,6 @@ app.get("/health", (req, res, next) => {
 
 app.use("/persons", require("./routes/persons"));
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send({
-    message: "서버에서 예기치 못한 오류가 발생했습니다.",
-  });
-});
-
 app.use((req, _, next) => {
   if (req.startTime) {
     console.log(
@@ -56,6 +49,13 @@ app.use((req, _, next) => {
     );
   }
   next();
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send({
+    message: "서버에서 예기치 못한 오류가 발생했습니다.",
+  });
 });
 
 app.listen(PORT, () => {
