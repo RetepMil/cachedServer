@@ -2,10 +2,11 @@
 
 const router = require("express").Router();
 const PersonModel = require("../models/person");
+const personLib = require("../lib/person-redis");
 
 // Get All Person Data
 router.get("/", async (_, res, next) => {
-  const persons = await PersonModel.find({});
+  const persons = await personLib.getAllFriends();
 
   if (persons.length === 0)
     return res.status(404).send({
@@ -19,7 +20,7 @@ router.get("/", async (_, res, next) => {
 
 // Get a Person Data
 router.get("/:id", async (req, res, next) => {
-  const person = await PersonModel.findOne({ personId: req.params.id });
+  const person = await personLib.getPersonInfo(req.params.id);
 
   if (!person)
     return res.status(404).send({
@@ -33,10 +34,7 @@ router.get("/:id", async (req, res, next) => {
 
 // Create a Person Data
 router.post("", async (req, res, next) => {
-  const person = await PersonModel({
-    personId: crypto.randomUUID().replaceAll("-", ""),
-    ...req.body,
-  }).save();
+  const person = await personLib.registerPersonInfo(req.body);
 
   res.status(201).send({
     message: "새로운 Person 도큐먼트가 생성되었습니다.",
@@ -48,13 +46,8 @@ router.post("", async (req, res, next) => {
 
 // Update a Person Data
 router.patch("/:id", async (req, res, next) => {
-  const person = await PersonModel.findOneAndUpdate(
-    { personId: req.params.id },
-    req.body,
-    {
-      new: true,
-    }
-  );
+  // update service
+  const person = personLib.updatePersonInfo(req.params.id, req.body);
 
   res.status(201).send({
     message: "Person 도큐먼트 하나가 수정되었습니다.",
@@ -65,27 +58,11 @@ router.patch("/:id", async (req, res, next) => {
 });
 
 router.get("/:id/friends", async (req, res, next) => {
-  const person = await PersonModel.findOne({ personId: req.params.id });
-  if (!person)
-    return res.status(404).send({
-      message: "해당 id를 가진 데이터가 없습니다.",
-    });
-
-  const { name, friendList } = person;
-  if (friendList.length === 0)
-    return res.status(404).send({
-      message: `${name}의 친구 정보가 없습니다.`,
-    });
-
-  const ret = [];
-  for (const id in friendList) {
-    const friend = await PersonModel.findOne({ personId: id });
-    ret.push(friend);
-  }
+  const friendInfos = personLib.getAllFriends(req.params.id);
 
   res.status(200).json({
     message: "OK",
-    data: ret,
+    data: friendInfos,
   });
 
   next();
